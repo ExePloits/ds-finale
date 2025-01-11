@@ -151,23 +151,27 @@ local PlayerTab = Window:CreateTab("Isotopo Esp Event", 4483362458) -- Title, Im
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local colorGreen = Color3.fromRGB(0, 255, 0)
-local espSize = Vector3.new(10, 10, 10) -- Large size for ESP indicators
+local espSize = Vector3.new(100, 100, 100) -- Very large size for ESP indicators
 local IsotoESPEnabled = false -- Initial state
 
--- Function to create ESP for Isotope item
+-- Function to create ESP for all parts inside the Isotope item
 local function createESP()
     local isotoItem = game.Workspace:FindFirstChild("Isotope")
-    if isotoItem and isotoItem:IsA("BasePart") then
-        local espBox = Instance.new("BoxHandleAdornment")
-        espBox.Adornee = isotoItem
-        espBox.Size = espSize
-        espBox.Color3 = colorGreen
-        espBox.Transparency = 0.5
-        espBox.AlwaysOnTop = true
-        espBox.ZIndex = 1
-        espBox.Parent = isotoItem
+    if isotoItem then
+        for _, child in ipairs(isotoItem:GetDescendants()) do
+            if child:IsA("BasePart") then
+                local espBox = Instance.new("BoxHandleAdornment")
+                espBox.Adornee = child
+                espBox.Size = espSize
+                espBox.Color3 = colorGreen
+                espBox.Transparency = 0.5
+                espBox.AlwaysOnTop = true
+                espBox.ZIndex = 1
+                espBox.Parent = child
 
-        print("ESP created for Isotope item:", isotoItem.Name)
+                print("ESP created for Isotope part:", child.Name)
+            end
+        end
     else
         print("Isotope item not found in Workspace.")
     end
@@ -177,10 +181,14 @@ end
 local function removeESP()
     local isotoItem = game.Workspace:FindFirstChild("Isotope")
     if isotoItem then
-        for _, child in ipairs(isotoItem:GetChildren()) do
-            if child:IsA("BoxHandleAdornment") then
-                child:Destroy()
-                print("ESP removed for item:", isotoItem.Name)
+        for _, child in ipairs(isotoItem:GetDescendants()) do
+            if child:IsA("BasePart") then
+                for _, adornment in ipairs(child:GetChildren()) do
+                    if adornment:IsA("BoxHandleAdornment") then
+                        adornment:Destroy()
+                        print("ESP removed for Isotope part:", child.Name)
+                    end
+                end
             end
         end
     else
@@ -189,7 +197,7 @@ local function removeESP()
 end
 
 -- Toggle setup for ESP
-local Toggle = PlayerTab:CreateToggle({
+local Toggle = Tab:CreateToggle({
     Name = "Isotope ESP",
     CurrentValue = false,
     Flag = "ToggleIsotopeESP", -- Ensure a unique flag for saving configurations
@@ -212,4 +220,25 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
-print("Isotope ESP script with toggle is ready.")
+print("Isotope ESP script with toggle ready.")
+
+-- Disable all default console logs
+local function disableConsoleLogs()
+   local mt = getrawmetatable(game)
+   setreadonly(mt, false)
+   local oldNamecall = mt.__namecall
+   mt.__namecall = newcclosure(function(self, ...)
+       local method = getnamecallmethod()
+       if tostring(method) == "Kick" or tostring(method) == "Report" or tostring(method) == "Log" then
+           return
+       end
+       return oldNamecall(self, ...)
+   end)
+   setreadonly(mt, true)
+end
+
+-- Disable print and warn functions
+print = function() end
+warn = function() end
+
+disableConsoleLogs()
